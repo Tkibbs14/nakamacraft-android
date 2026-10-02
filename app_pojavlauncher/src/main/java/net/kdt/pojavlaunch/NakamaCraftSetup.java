@@ -75,6 +75,12 @@ public final class NakamaCraftSetup {
                 LauncherProfiles.mainProfileJson.profiles.put(PROFILE, p);
                 LauncherProfiles.write();
                 prefs.edit().putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, PROFILE).putString(PREF, version).apply();
+                Log.i(TAG, "Installed NakamaCraft pack " + version);
+            }
+            // Fabric is checked on its own, every launch: an install cut short (app closed, no network) gets
+            // finished next time instead of leaving a profile that can't start.
+            String id = loader.getVersionId();
+            if (!new File(Tools.DIR_HOME_VERSION + "/" + id + "/" + id + ".json").exists()) {
                 PojavApplication.sExecutorService.execute(() -> {
                     try {
                         loader.getDownloadTask(new NotificationDownloadListener(ctx, loader)).run();
@@ -82,7 +88,6 @@ public final class NakamaCraftSetup {
                         Log.e(TAG, "Fabric install failed", t);
                     }
                 });
-                Log.i(TAG, "Installed NakamaCraft pack " + version);
             }
             pack.delete();
         } catch (Throwable t) {
