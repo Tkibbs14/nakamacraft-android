@@ -258,3 +258,20 @@ dependencies {
 
 }
 apply from: rootProject.file('gradle/prefab_bypass.gradle')
+
+// Nakama Craft: ship Java 25 (needed by Minecraft 26.1) for arm64 inside the APK, fetched at build time from
+// the same release Amethyst downloads it from at runtime. Not committed; NakamaCraftSetup installs it.
+def nakamaJre = file("src/main/assets/components/nakamacraft/jre25-arm64.tar.xz")
+tasks.register('nakamaCraftJava') {
+    outputs.file(nakamaJre)
+    doLast {
+        if (nakamaJre.exists() && nakamaJre.length() > 1000000) return
+        nakamaJre.parentFile.mkdirs()
+        def url = new URL("https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/download_jre25/jre25-android-arm64.tar.xz")
+        def conn = url.openConnection()
+        conn.instanceFollowRedirects = true
+        conn.inputStream.withStream { input -> nakamaJre.withOutputStream { it << input } }
+        logger.lifecycle("Nakama Craft: bundled Java 25 for arm64 (${nakamaJre.length()} bytes)")
+    }
+}
+tasks.named('preBuild') { dependsOn 'nakamaCraftJava' }

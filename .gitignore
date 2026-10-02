@@ -14,3 +14,6 @@ app_pojavlauncher/.cxx/
 /jre_lwjgl3glfw/**/build/
 /jre_lwjgl3glfw/**/.gradle/
 /app_pojavlauncher/curseforge_key.txt
+
+# Nakama Craft: fetched at build time
+app_pojavlauncher/src/main/assets/components/nakamacraft/

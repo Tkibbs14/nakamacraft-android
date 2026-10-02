@@ -7,7 +7,10 @@ import android.util.Log;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import com.kdt.mcgui.ProgressLayout;
+
 import net.kdt.pojavlaunch.modloaders.modpacks.api.ModLoader;
+import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.NotificationDownloadListener;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.utils.ZipUtils;
@@ -85,6 +88,36 @@ public final class NakamaCraftSetup {
         } catch (Throwable t) {
             Log.e(TAG, "NakamaCraft setup failed", t);
         }
+        installBundledJava(ctx);
+    }
+
+    /**
+     * Minecraft 26.1 needs Java 25. On arm64 phones the runtime ships inside the APK (assets/components/nakamacraft),
+     * so nothing has to come from GitHub, which is slow or blocked in some places. It installs under the same name
+     * Amethyst's own download uses, so the launcher finds it. Other architectures still download it on first Play.
+     */
+    private static void installBundledJava(Context ctx) {
+        final String asset = "components/nakamacraft/jre25-arm64.tar.xz";
+        final String name = "External-25";
+        if (Architecture.getDeviceArchitecture() != Architecture.ARCH_ARM64) return;
+        if (MultiRTUtils.getExactJreName(25) != null) return;
+        try {
+            ctx.getAssets().open(asset).close();
+        } catch (Exception e) {
+            return; // a build without the bundled runtime
+        }
+        ProgressLayout.setProgress(ProgressLayout.UNPACK_RUNTIME, 0, R.string.global_unpacking, "Java 25");
+        PojavApplication.sExecutorService.execute(() -> {
+            try (InputStream in = ctx.getAssets().open(asset)) {
+                MultiRTUtils.installRuntimeNamed(Tools.NATIVE_LIB_DIR, in, name);
+                MultiRTUtils.postPrepare(name);
+                Log.i(TAG, "Installed bundled Java 25");
+            } catch (Throwable t) {
+                Log.e(TAG, "Bundled Java 25 failed; it will download on Play instead", t);
+            } finally {
+                ProgressLayout.clearProgress(ProgressLayout.UNPACK_RUNTIME);
+            }
+        });
     }
 
     private NakamaCraftSetup() {}
